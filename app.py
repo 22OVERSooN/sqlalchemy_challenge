@@ -13,11 +13,11 @@ import flask
 from flask import Flask,jsonify
 
 #create engine to hawaii.sqlite
-engine = create_engine("sqlite://hawaii.sqlite")
+engine = create_engine("sqlite:///hawaii.sqlite")
 #relfect an existing databse into a new model
 Base = automap_base()
 #relfect the tables
-Base.classes.keys()
+Base.prepare(engine, reflect = True)
 #save reference to each table
 Measurement = Base.classes.measurement
 Station = Base.classes.station
@@ -29,14 +29,13 @@ app = Flask(__name__)
 @app.route("/")
 def homepage():
     return(f"Welcome to weather analysis API in Hawaii<br/>"
-        f"Here is all the routes you can use: <br/>"
-        f"/api/v1.0/precipitation <br/>"
-        f"/api/v1.0/stations <br/>"
-        f"/api/v1.0/tobs <br/>"
-        f"/api/v1.0/<start> <br/>"
-        f"/api/v1.0/start/end <br/>")
+        f"Here is all the routes you can use:<br/>"
+        f"/api/v1.0/precipitation<br/>"
+        f"/api/v1.0/stations<br/>"
+        f"/api/v1.0/tobs<br/>"
+        f"/api/v1.0/start/end<br/>")
 
-@app.route("preciptation")
+@app.route("/api/v1.0/precipitation")
 def precipitation():
     session = Session(engine)
     one_year_before = dt.date(2017,8,23)-dt.timedelta(days = 365)
@@ -65,22 +64,23 @@ def tobs():
     session.close()
     return jsonify(tobs_list)
 
-@app.route("/api/v1.0/start/end")
-def start_end(start, end):
+@app.route("/api/v1.0/<start>")
+@app.route("/api/v1.0/<start>/<end>")
+def start_end(start = None, end = None):
     session = Session(engine)
-    if end is Null:
-        end == '2017-08-23'
-        results = session.query(Measurement.tobs).\
-            filter(Measurement.date>= start).filter(Measurement.date<= end).all()
-        session.close()
-    else:
-        results = session.query(Measurement.tobs).\
-            filter(Measurement.date>= start).filter(Measurement.date<= end).all()
-        session.close()
-    tobs_list = []
-    for row in results:
-        tobs_list.append(ros.tobs)
-    return(jsonify({"temps_min" : min(tobs_list), "temps_max":max(tobs_list), "temp_avg": np.mean}))
+    stas = [func.min(Measurement.tobs), func.avg(Measurement.tobs), func.max(Measurement.tobs)]
+
+    if not end:
+        results = session.query(*stas).\
+            filter(Measurement.date >= start).all()
+        temps = list(np.ravel(results))
+        return jsonify(temps)        
+
+    results = session.query(*stas).\
+        filter(Measurement.date >= start).\
+        filter(Measurement.date <= end).all()
+    temps = list(np.ravel(results))
+    return jsonify(results)
 
 if __name__ == "__main__":
     app.run(debug=True)
