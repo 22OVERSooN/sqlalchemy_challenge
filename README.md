@@ -255,7 +255,8 @@ Load the list of daily normals into a Pandas DataFrame and set the index equal t
 Use Pandas to plot an area plot (stacked=False) for the daily normals.
 
 # Feedback
-1. climate_starter
+1. precipitation_analysis
 It's hard to generate the exactly same histogram like the example shows.
 
-2.
+2. station_analysis
+It's hard to use bins, because bins is not for table itself, it should be used when we generate plot
